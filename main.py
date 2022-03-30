@@ -1,6 +1,8 @@
+import email
 from kivymd.app import MDApp
 from kivy.lang import Builder
 import kivy
+from matplotlib.pyplot import text
 kivy.require('1.0.8')
 from kivymd.uix.list import IconRightWidget, ThreeLineAvatarIconListItem
 import mysql.connector as mysql
@@ -8,18 +10,9 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty, StringProperty
 from kivymd.toast import toast
 from  kivy.uix.floatlayout import FloatLayout
+import re
 
-class Notifications(): 
-    def input_is_invalid(self):
-        toast("Incorrect email or password", duration=6)
 
-    def successfully_verified (self):
-        toast("Your account is created ", duration=5)
-    
-    def successfully_loged_in(self): 
-        toast("Successfully loged in", duration=5)
-
-    
 class LoginWindow(Screen):
     email = ObjectProperty(None)
     password = ObjectProperty(None)
@@ -43,23 +36,28 @@ class LoginWindow(Screen):
         else:
             return False 
     
-
-    
-
 class CreateAccountWindow(Screen):
-    name = ObjectProperty(None)
-    first_n = ObjectProperty(None)
-    last_n = ObjectProperty(None)
+    username = ObjectProperty(None)
     email = ObjectProperty(None)
     password = ObjectProperty(None)
+    confirm_password= ObjectProperty(None)
+    courses_g1 = StringProperty(None)
+    courses_g2 = StringProperty(None)
+    courses_g3 = StringProperty(None)
+    courses_b1 = StringProperty(None)
+    courses_b2 = StringProperty(None)
     
-    def __init__(self, name, first_n, last_n, email, password): 
-        self.name = name
-        self.first_n = first_n
-        self.last_n = last_n
+    def __init__(self, username, email, password, confirm_password, courses_g1,  courses_g2, courses_g3, courses_b1, courses_b2): 
+        self.username = username
         self.email = email
         self.password = password
-    
+        self.confirm_password = confirm_password
+        self.courses_g1 = courses_g1
+        self.courses_g2 = courses_g2
+        self.courses_g3 = courses_g3
+        self.courses_b1 = courses_b1
+        self.courses_b2 = courses_b2
+
     
     def register(self): 
         
@@ -73,48 +71,117 @@ class CreateAccountWindow(Screen):
 
 		# Create A Cursor
         c = mydb.cursor()
-        if self.name != "" and self.email != "" and self.email.count("@") == 1 and self.email.count(".") > 0:
-            if self.password != "":
-                sql_query_1 = "insert into students (StudentName, FirstName, LastName, Email, Password) values (%s, %s, %s, %s, %s)"
-                c.execute(sql_query_1, (self.name, self.first_n, self.last_n, self.email, self.password)) 
-                mydb.commit()
-                self.reset()
-        else: 
-            mydb.close()
-            Notifications().already_exisiting()
-        
+        email_quary = f"select email from students"
+        c.execute(email_quary)
+        email_records =  c.fetchall() 
+        mydb.commit()
+        email_lst = list(email_records)
+        print(email_lst)
+         
+        if self.email not in email_lst:   
+            if self.username != "" and self.email != "" and self.email.count("@") == 1 and self.email.count(".") > 0:
+                if self.password != "" and self.confirm_password != "" and self.password != self.confirm_password and len(self.password) >= 6 and re.search(r"\d", self.password)  and re.search(r"[A-Z]", self.password) and re.search(r"[a-z]", self.password) :
+                    
+                    info_quary = "insert into students (StudentName, Email, Password) values (%s, %s, %s)"
+                    c.execute(info_quary, (self.username, self.email, self.password)) 
+                    course_quary = "insert into courses (Email, CanCourse_1, CanCourse_2, CanCourse_3, NeedCourse_1, NeedCourse_2 ) values (%s, %s, %s, %s, %s, %s)"
+                    c.execute(course_quary, (self.email, self.courses_g1, self.courses_g2, self.courses_g3, self.courses_b1, self.courses_b2)) 
+                    mydb.commit()
+                    mydb.close()
+                else: 
+                    if self.password != self.confirm_password: 
+                        toast("Password doesnt match")
+                    else: 
+                        toast("Please check password")
+        elif self.email in email_lst:
+            toast("Invalid user")
+    
+    
+class HomePage(Screen): 
+    
+    def get_user_id(self, email):
+        mydb = mysql.connect(
+			host = "127.0.0.1", 
+			user = "root",
+			passwd = "Kirgizistan993",
+			database = "dbforusers",
+            )
 
-    def reset(self):
-        self.email = ""
-        self.password = ""
-        self.name = ""
+		# Create A Cursor
+        c = mydb.cursor()
+        """Hämtar användarens ID från databasen"""
+        user_id = f"SELECT StudentId FROM Students WHERE Email = '{email}'"
+        c.execute(user_id)
+        result = c.fetchone()
+        mydb.commit()
+        return result.get('StudentId')
+
+    def update_profile_info(self, id, new_name, password, phonenr):
+        mydb = mysql.connect(
+			host = "127.0.0.1", 
+			user = "root",
+			passwd = "Kirgizistan993",
+			database = "dbforusers",
+            )
+
+		# Create A Cursor
+        c = mydb.cursor()
+        """Uppdaterar användarens profil vid begäran"""
+        c.execute(f"SET SQL_SAFE_UPDATES = 0")
+        update = f"UPDATE  Students SET Email = '{new_name}', password = '{password}'"\
+                 f"WHERE StudentID = {id}"
+        c.execute(update)
+        mydb.commit()
+        print(id, new_name, password, phonenr)
+
 
 
 class MainApp(MDApp):
     def build(self):
         self.sm = ScreenManager()
         self.sm.add_widget(Builder.load_file('login-page.kv'))
-        self.sm.add_widget(Builder.load_file('signup_page.kv'))
+        self.sm.add_widget(Builder.load_file('sign_up2.kv'))
+        #self.sm.add_widget(Builder.load_file('navbar.kv'))
+        self.sm.add_widget(Builder.load_file('navbar2.kv'))
+
 
         return self.sm
 
     def created_account(self):
-        name = self.sm.get_screen("create_account").ids.new_user.text
-        first_n = self.sm.get_screen("create_account").ids.new_fisrt_n.text
-        last_n = self.sm.get_screen("create_account").ids.new_last_n.text
-        password = self.sm.get_screen("create_account").ids.new_password.text
-        email = self.sm.get_screen("create_account").ids.new_email.text
-        CreateAccountWindow(name, first_n, last_n, email, password).register()
+        name = self.sm.get_screen("create_an_account").ids.new_user.text
+        email = self.sm.get_screen("create_an_account").ids.new_email.text
+        
+        password = self.sm.get_screen("create_an_account").ids.new_password.text
+        confirm_password = self.sm.get_screen("create_an_account").ids.new_conf_password.text
+        courses_g1 = self.sm.get_screen("create_an_account").ids.good_c1.text
+        courses_g2 = self.sm.get_screen("create_an_account").ids.good_c2.text
+        courses_g3 = self.sm.get_screen("create_an_account").ids.good_c3.text
+        courses_b1 = self.sm.get_screen("create_an_account").ids.bad_b1.text
+        courses_b2 = self.sm.get_screen("create_an_account").ids.bad_b2.text
+
+        CreateAccountWindow(name, email, password, confirm_password, courses_g1, courses_g2, courses_g3, courses_b1, courses_b2).register()
 
     def login_valid(self):
         email = self.sm.get_screen("login").ids.user_email.text
         psw = self.sm.get_screen("login").ids.user_password.text
         validation_status = LoginWindow().validate(email, psw)
         if validation_status:
-            Notifications().successfully_loged_in()
+            toast("success")
         else: 
-            Notifications().input_is_invalid()
+            toast("invalid")
 
+    
+
+    def update_profile(self):
+        """Funktion som skickar den nya profil informationen till update_profile_info som sedan updaterar databasen"""
+        old_name = self.sm.get_screen("create_an_account").ids.new_user.text
+        name = self.sm.get_screen('navbar2').ids.edit_user.text
+        password = self.sm.get_screen('navbar2').ids.profile_password.text
+        user_id = HomePage().get_user_id(old_name)
+        HomePage().update_profile_info(user_id, name, password)
+    
+    
+   
         
     
         
