@@ -15,7 +15,7 @@ MDScreen:
 
         MDTextFieldRound:
             hint_text: "Email"
-            id: user_name
+            id: user_email
             required: True
             helper_text: "Required"
             helper_text_mode: "on_error"
@@ -48,7 +48,7 @@ MDScreen:
             font_size: 10
             pos_hint: {"center_x": 0.5}
             on_press: 
-                app.root.current = 'create_account'
+                app.root.current = 'create_an_account'
                 root.manager.transition.direction = "left"
         
     
@@ -58,7 +58,8 @@ MDScreen:
             font_size: 15
             pos_hint: {"center_x": 0.5}
             on_press: 
-                app.login_input()
+                app.login_valid()
+                app.root.current = 'home_page'
                 root.manager.transition.direction = "up"
 
         
