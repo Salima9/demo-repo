@@ -96,10 +96,9 @@ class CreateAccountWindow(Screen):
         elif self.email in email_lst:
             toast("Invalid user")
     
+class ProfilePage(Screen): 
     
-class HomePage(Screen): 
-    
-    def get_user_id(self, email):
+    def get_student_id(self, email):
         mydb = mysql.connect(
 			host = "127.0.0.1", 
 			user = "root",
@@ -110,13 +109,15 @@ class HomePage(Screen):
 		# Create A Cursor
         c = mydb.cursor()
         """Hämtar användarens ID från databasen"""
-        user_id = f"SELECT StudentId FROM Students WHERE Email = '{email}'"
-        c.execute(user_id)
+        studnet_id = f"select StudentId from students where Email = '{email}'"
+        c.execute(studnet_id)
         result = c.fetchone()
         mydb.commit()
-        return result.get('StudentId')
+        result2 = result[0]
 
-    def update_profile_info(self, id, new_name, password, phonenr):
+        return result2
+
+    def update_profile_info(self, id, new_name, password):
         mydb = mysql.connect(
 			host = "127.0.0.1", 
 			user = "root",
@@ -128,11 +129,33 @@ class HomePage(Screen):
         c = mydb.cursor()
         """Uppdaterar användarens profil vid begäran"""
         c.execute(f"SET SQL_SAFE_UPDATES = 0")
-        update = f"UPDATE  Students SET Email = '{new_name}', password = '{password}'"\
-                 f"WHERE StudentID = {id}"
+        update = f"UPDATE  Students SET StudentName = '{new_name}', Password ='{password}' where StudentID = {id}"
+
+        
         c.execute(update)
         mydb.commit()
-        print(id, new_name, password, phonenr)
+        print(id, new_name, password)
+
+    def update_profile_courses(self, email, good_c1, good_c2, good_c3, bad_c1, bad_c2):
+        mydb = mysql.connect(
+			host = "127.0.0.1", 
+			user = "root",
+			passwd = "Kirgizistan993",
+			database = "dbforusers",
+            )
+
+		# Create A Cursor
+        c = mydb.cursor()
+        """Uppdaterar användarens profil vid begäran"""
+        c.execute(f"SET SQL_SAFE_UPDATES = 0")
+    
+        update_course = f"UPDATE  courses SET CanCourse_1 = '{good_c1}', CanCourse_2 = '{good_c2}', CanCourse_3 = '{good_c3}', NeedCourse_1 = '{bad_c1}', NeedCourse_2 = '{bad_c2}' where Email = '{email}'"
+        c.execute(update_course)
+        mydb.commit()
+        print(good_c1, good_c2, good_c3, bad_c1, bad_c2 )
+
+ 
+
 
 
 
@@ -169,16 +192,27 @@ class MainApp(MDApp):
             toast("success")
         else: 
             toast("invalid")
-
     
 
     def update_profile(self):
         """Funktion som skickar den nya profil informationen till update_profile_info som sedan updaterar databasen"""
-        old_name = self.sm.get_screen("create_an_account").ids.new_user.text
-        name = self.sm.get_screen('navbar2').ids.edit_user.text
-        password = self.sm.get_screen('navbar2').ids.profile_password.text
-        user_id = HomePage().get_user_id(old_name)
-        HomePage().update_profile_info(user_id, name, password)
+        student_email = self.sm.get_screen('login').ids.user_email.text
+        name = self.sm.get_screen('home_page').ids.edit_user.text
+        password = self.sm.get_screen('home_page').ids.profile_password.text
+        #conf_password = self.sm.get_screen('home_page').ids.conf_password.text
+        good_course1 = self.sm.get_screen('home_page').ids.good_c1.text
+        good_course2 = self.sm.get_screen('home_page').ids.good_c2.text
+        good_course3 = self.sm.get_screen('home_page').ids.good_c3.text
+        bad_course1 = self.sm.get_screen('home_page').ids.bad_b1.text
+        bad_course2 = self.sm.get_screen('home_page').ids.bad_b2.text
+
+        user_id = ProfilePage().get_student_id(student_email) 
+        ProfilePage().update_profile_info(user_id, name, password)
+        ProfilePage().update_profile_courses(student_email, good_course1, good_course2, good_course3, bad_course1, bad_course2)
+
+    
+
+    
     
     
    
