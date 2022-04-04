@@ -1,17 +1,29 @@
 import email
+from tkinter import Label
 from kivymd.app import MDApp
 from kivy.lang import Builder
 import kivy
 from matplotlib.pyplot import text
-kivy.require('1.0.8')
+#kivy.require('1.0.8')
 from kivymd.uix.list import IconRightWidget, ThreeLineAvatarIconListItem
 import mysql.connector as mysql
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty, StringProperty
 from kivymd.toast import toast
-from  kivy.uix.floatlayout import FloatLayout
+from  kivymd.uix.floatlayout import MDFloatLayout
+from  kivymd.uix.behaviors import FakeRectangularElevationBehavior
+from kivy.core.text import LabelBase
 import re
 
+import kivy
+kivy.require('1.9.0')
+
+from kivy.config import Config
+Config.set('graphics', 'width', '200')
+Config.set('graphics', 'height', '200')
+
+from kivy.core.window import Window
+Window.size = (310, 580)
 
 class LoginWindow(Screen):
     email = ObjectProperty(None)
@@ -95,8 +107,11 @@ class CreateAccountWindow(Screen):
                         toast("Please check password")
         elif self.email in email_lst:
             toast("Invalid user")
+
+class ProfileCard(MDFloatLayout, FakeRectangularElevationBehavior): 
+    pass   
+class ProfilePage(): 
     
-class ProfilePage(Screen): 
     
     def get_student_id(self, email):
         mydb = mysql.connect(
@@ -117,7 +132,8 @@ class ProfilePage(Screen):
 
         return result2
 
-    def update_profile_info(self, id, new_name, password):
+    def update_profile_info(self, id, new_name, passw, conf_passw):
+        
         mydb = mysql.connect(
 			host = "127.0.0.1", 
 			user = "root",
@@ -127,14 +143,18 @@ class ProfilePage(Screen):
 
 		# Create A Cursor
         c = mydb.cursor()
-        """Uppdaterar användarens profil vid begäran"""
-        c.execute(f"SET SQL_SAFE_UPDATES = 0")
-        update = f"UPDATE  Students SET StudentName = '{new_name}', Password ='{password}' where StudentID = {id}"
+        if passw != "" and conf_passw != "" and passw == conf_passw and len(passw) >= 6 and re.search(r"\d", passw)  and re.search(r"[A-Z]", passw) and re.search(r"[a-z]", passw) :
 
-        
-        c.execute(update)
-        mydb.commit()
-        print(id, new_name, password)
+            """Uppdaterar användarens profil vid begäran"""
+            c.execute(f"SET SQL_SAFE_UPDATES = 0")
+            update = f"UPDATE  Students SET StudentName = '{new_name}', Password ='{passw}' where StudentID = {id}"
+
+            
+            c.execute(update)
+            mydb.commit()
+            print(id, new_name, passw, conf_passw )
+        else: 
+            toast("Please check the password")
 
     def update_profile_courses(self, email, good_c1, good_c2, good_c3, bad_c1, bad_c2):
         mydb = mysql.connect(
@@ -166,6 +186,8 @@ class MainApp(MDApp):
         self.sm.add_widget(Builder.load_file('sign_up2.kv'))
         #self.sm.add_widget(Builder.load_file('navbar.kv'))
         self.sm.add_widget(Builder.load_file('navbar2.kv'))
+        self.sm.add_widget(Builder.load_file('profile_page.kv'))
+
 
 
         return self.sm
@@ -197,17 +219,17 @@ class MainApp(MDApp):
     def update_profile(self):
         """Funktion som skickar den nya profil informationen till update_profile_info som sedan updaterar databasen"""
         student_email = self.sm.get_screen('login').ids.user_email.text
-        name = self.sm.get_screen('home_page').ids.edit_user.text
-        password = self.sm.get_screen('home_page').ids.profile_password.text
-        #conf_password = self.sm.get_screen('home_page').ids.conf_password.text
-        good_course1 = self.sm.get_screen('home_page').ids.good_c1.text
-        good_course2 = self.sm.get_screen('home_page').ids.good_c2.text
-        good_course3 = self.sm.get_screen('home_page').ids.good_c3.text
-        bad_course1 = self.sm.get_screen('home_page').ids.bad_b1.text
-        bad_course2 = self.sm.get_screen('home_page').ids.bad_b2.text
+        name = self.sm.get_screen('update_profile_page').ids.edit_user.text
+        passw = self.sm.get_screen('update_profile_page').ids.profile_password.text
+        conf_passw = self.sm.get_screen('update_profile_page').ids.conf_password.text
+        good_course1 = self.sm.get_screen('update_profile_page').ids.good_c1.text
+        good_course2 = self.sm.get_screen('update_profile_page').ids.good_c2.text
+        good_course3 = self.sm.get_screen('update_profile_page').ids.good_c3.text
+        bad_course1 = self.sm.get_screen('update_profile_page').ids.bad_b1.text
+        bad_course2 = self.sm.get_screen('update_profile_page').ids.bad_b2.text
 
         user_id = ProfilePage().get_student_id(student_email) 
-        ProfilePage().update_profile_info(user_id, name, password)
+        ProfilePage().update_profile_info(user_id, name, passw, conf_passw)
         ProfilePage().update_profile_courses(student_email, good_course1, good_course2, good_course3, bad_course1, bad_course2)
 
     
@@ -222,4 +244,6 @@ class MainApp(MDApp):
 
 
 if __name__ == '__main__':
+    #LabelBase.register(name = "MPoppins", fn_regular = "C:\Users\omurb\OneDrive\Dokument\python3\demo-repo\fonts\Poppins\Poppins""-Medium.ttf")
+    #LabelBase.register(name = "BPoppins", fn_regular="C:\Users\omurb\OneDrive\Dokument\python3\demo-repo\fonts\Poppins\Poppins""-Bold.ttf")
     MainApp().run()
