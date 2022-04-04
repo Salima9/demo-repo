@@ -18,121 +18,118 @@ MDScreen:
             Screen:
                 id: profile_screen
                 name: 'profile_screen'
-                BoxLayout:
-                    orientation: 'vertical'
+                MDFloatLayout:
                     MDToolbar:
                         title: "Menu"
                         elevation: 5
                         left_action_items: [['menu', lambda x: nav_drawer.set_state('toggle')]]
                     Screen:
-                        BoxLayout:
-                            orientation: 'vertical'
-                            spacing: '0dp'
-                            padding: '-100dp'
-                            MDLabel:
-                                text: 'Your Profile'
-                                font_size: 30
-                                halign: 'center'
-                                size_hint_y: None
-                                height: self.texture_size[1]
-                                padding_y: 15
+                        MDFloatLayout: 
+                            md_bg_color: rgba(246, 250, 255, 255)
+                            ProfileCard:
+                                size_hint_y: .65
+                                pos_hint: {"center_y": .7}
+                                elevation: 6
+                                md_bg_color: 1, 1, 1, 1
+                                radius: [0, 0, 20, 20]
+                                MDIconButton:
+                                    icon: "arrow-left"
+                                    pos_hint: {"center_y": .91}
+                                    user_font_size: "20sp"
+                                    theme_text_color: "Custom"
+                                    text_color: rgba(71, 92, 119, 255)
+                                    on_release: 
+                                        app.root.current = 'home_page'
 
-                            MDTextFieldRound:
-                                id: edit_user
-                                icon_right: "account"
-                                size_hint_x: None
-                                width: 200
-                                font_size: 14
-                                pos_hint: {'center_x': .5}
-                                multiline: False
-                                text:''
+                                
+                                MDLabel: 
+                                    font_name: "fonts\Poppins\Poppins""-Medium.ttf"
+                                    text: "My Profile"
+                                    font_size: "15sp"
+                                    pos_hint: {"center_x": .56, "center_y": .82}
+                                    color: rgba(71, 92, 119, 255)
+                                Image:
+                                    size_hint_y: None
+                                    source: "pics/profile-pic.png"
+                                    width: 80
+                                    allow_stretch: True 
+                                    pos_hint: {"center_x": .5, "center_y": .62}
+                                
+                                MDLabel:
+                                    font_name: "fonts\Poppins\Poppins""-Bold.ttf" 
+                                    text: "Salima Omurbekova"
+                                    font_size: "20sp"
+                                    pos_hint: {"center_y": .44}
+                                    halign: "center"
+                                    color: rgba(71, 92, 119, 255)
+                                
+                                MDLabel: 
+                                    text: "Courses I can help with"
+                                    font_size: "20sp"
+                                    pos_hint: {"center_y": .3}
+                                    halign: "center"
+                                    color: rgba(71, 92, 119, 255)
+                                
+                                MDGridLayout: 
+                                    rows: 2
+                                    cols: 3
+                                    size_hint: .6, .12
+                                    pos_hint: {"center_x": .5, "center_y": .15}
+                                    MDLabel: 
+                                        text: "Matte"
+                                        halign: "center"
+                                        font_size: "12sp"
+                                        color: rgba(71, 92, 119, 255)
+                                    MDLabel: 
+                                        text: "Matte"
+                                        halign: "center"
+                                        font_size: "12sp"
+                                        color: rgba(71, 92, 119, 255)
+                                    MDLabel: 
+                                        text: "Matte"
+                                        halign: "center"
+                                        font_size: "12sp"
+                                        color: rgba(71, 92, 119, 255)
+                                
+                            MDLabel: 
+                                text: "Courses I need help with"
+                                font_size: "20sp"
+                                pos_hint: {"center_y": .26}
+                                halign: "center"
+                                color: rgba(71, 92, 119, 255)
                             
+                            MDGridLayout: 
+                                rows: 2
+                                cols: 3
+                                size_hint: .85, .12
+                                pos_hint: {"center_x": .5, "center_y": .2}
+                                MDLabel: 
+                                    text: "Fysik"
+                                    halign: "center"
+                                    font_size: "12sp"
+                                    color: rgba(188, 202, 228, 255)
+                                MDLabel: 
+                                    text: "Fysik"
+                                    halign: "center"
+                                    font_size: "12sp"
+                                    color: rgba(188, 202, 228, 255)
                             
-                            MDTextFieldRound:
-                                id: profile_password
-                                icon_right: "eye-off"
-                                size_hint_x: None
-                                password: 'True'
-                                width: 200
-                                font_size: 14
-                                pos_hint: {'center_x': .5}
-                                multiline: False
-                                text: ''
-                            
-                            MDTextFieldRound:
-                                id: conf_password
-                                icon_right: "eye-off"
-                                size_hint_x: None
-                                password: 'True'
-                                width: 200
-                                font_size: 14
-                                pos_hint: {'center_x': .5}
-                                multiline: False
-                                text: ''
-                            
-                            MDTextFieldRound:
-                                hint_text:'I am good at'
-                                id: good_c1
-                                required: True
-                                foreground_color: 1, 0, 1, 1
-                                size_hint_x: None
-                                width: 150
+                            MDFillRoundFlatButton:
+                                text: "Change Profile Info"
                                 font_size: 15
-                                pos_hint: {"center_x": 0.5}
-                                multiline: False
+                                pos_hint: {"center_x": .5}
+                                on_press: 
+                                    app.root.current = 'update_profile_page'
+                                    root.manager.transition.direction = 'right'
+                                
+
+
+
                             
-                            MDTextFieldRound:
-                                hint_text:'I am good at'
-                                id: good_c2
-                                required: True
-                                foreground_color: 1, 0, 1, 1
-                                size_hint_x: None
-                                width: 150
-                                font_size: 15
-                                pos_hint: {"center_x": 0.5}
-                                multiline: False
-                            
-                            MDTextFieldRound:
-                                hint_text:'I am good at'
-                                id: good_c3
-                                required: True
-                                foreground_color: 1, 0, 1, 1
-                                size_hint_x: None
-                                width: 150
-                                font_size: 15
-                                pos_hint: {"center_x": 0.5}
-                                multiline: False
                             
 
-                            MDTextFieldRound:
-                                hint_text:'I need help with '
-                                id: bad_b1
-                                required: True
-                                foreground_color: 1, 0, 1, 1
-                                size_hint_x: None
-                                width: 150
-                                font_size: 15
-                                pos_hint: {"center_x": 0.5}
-                                multiline: False
+
                             
-                            MDTextFieldRound:
-                                hint_text:'I need help with '
-                                id: bad_b2
-                                required: True
-                                foreground_color: 1, 0, 1, 1
-                                size_hint_x: None
-                                width: 150
-                                font_size: 15
-                                pos_hint: {"center_x": 0.5}
-                                multiline: False
-                            
-                            MDRectangleFlatIconButton:
-                                icon: "account-reactivate"
-                                text: 'Save'
-                                theme_text_color: "Custom"
-                                pos_hint: {'center_x': .5}
-                                on_release:
-                                    app.update_profile()
 
                     Widget:
 
@@ -178,6 +175,7 @@ MDScreen:
 
                             IconLeftWidget:
                                 icon: 'format-list-bulleted'
+
 
 
 
