@@ -1,101 +1,127 @@
 MDScreen:
-    name: 'profile'
-    id: profile
-    BoxLayout:
-        MDTextFieldRound:
-            hint_text:'Password'
-            id: updated_password
-            required: True
-            icon_right: "key-variant"
-            foreground_color: 1, 0, 1, 1
-            size_hint_x: None
-            width: 150
-            font_size: 15
-            pos_hint: {"center_x": 0.5}
-            password: True
-            multiline: False
+    id: update_profile_page
+    name: 'update_profile_page'
+    MDFloatLayout:
+        md_bg_color: rgba(246, 250, 255, 255)
+        MDIconButton:
+            icon: "arrow-left"
+            pos_hint: {"center_y": .91}
+            user_font_size: "20sp"
+            theme_text_color: "Custom"
+            text_color: rgba(71, 92, 119, 255)
+            on_release: 
+                app.root.current = 'profile_screen'
 
-        MDTextFieldRound:
-            hint_text:'Confirm Password'
-            id: updated_conf_password
-            required: True
-            icon_right: "key-variant"
-            foreground_color: 1, 0, 1, 1
-            size_hint_x: None
-            width: 150
-            font_size: 15
-            pos_hint: {"center_x": 0.5}
-            password: True
-            multiline: False
+        MDLabel: 
+            font_name: "fonts\Poppins\Poppins""-Medium.ttf"
+            text: "My Profile"
+            font_size: "15sp"
+            pos_hint: {"center_x": .56, "center_y": .82}
+            color: rgba(71, 92, 119, 255)
 
-        MDFillRoundFlatButton:
-            text: "Change Password"
-            font_size: 15
-            pos_hint: {"center_x": 0.5}
-            on_press: 
-                app.update_password()
-                app.root.current = 'navbar'
-                root.manager.transition.direction = 'right'
+        BoxLayout: 
+            size: 500, 450
+            pos_hint: {"center_x": 0.5, "center_y": 0.5}
+            elevation: 10
+            padding: 15
+            spacing: 20
+            orientation: 'vertical'
 
-
-
-    BoxLayout:
-        orientation: 'vertical'
-        MDToolbar:
-            title: "Profile Page"
-            md_bg_color: .2,.2,.2,1
-            specific_text_color: 1,1,1,1
-        
-        MDFillRoundFlatButton:
-            text: "Change Password"
-            font_size: 15
-            pos_hint: {"center_x": 0.5}
-            on_press: 
-                app.update_password()
-                app.root.current = 'navbar'
-                root.manager.transition.direction = 'right'
-        
-        
-
-
-        MDBottomNavigation:
-            #color stuff
-            #panel_color: 0,0,1,1
-
-            MDBottomNavigationItem:
-                name: 'screen 1'
-                text: "Match"
-                icon: 'home'
-
-                MDLabel:
-                    text: "Student List"
-                    halign: 'center'
-
-            MDBottomNavigationItem:
-                name: 'screen 2'
-                text: "Post Page"
-                icon: 'dropbox'
-
-                MDLabel:
-                    text: "Post Page"
-                    halign: 'center'
-
-
-            MDBottomNavigationItem:
-                name: 'screen 3'
-                text: "Message"
-                icon: 'inbox'
-
-                MDLabel:
-                    text: "Message Box"
-                    halign: 'center'
+            MDTextFieldRound:
+                hint_text: "Your new name"
+                id: edit_user
+                icon_right: "account"
+                size_hint_x: None
+                width: 200
+                font_size: 14
+                pos_hint: {'center_x': .5}
+                multiline: False
+                text:''
             
-            MDBottomNavigationItem:
-                name: 'screen 3'
-                text: "Profile"
-                icon: 'account-circle'
+            
+            MDTextFieldRound:
+                hint_text: "Your new password"
+                id: profile_password
+                icon_right: "eye-off"
+                size_hint_x: None
+                password: 'True'
+                width: 200
+                font_size: 14
+                pos_hint: {'center_x': .5}
+                multiline: False
+                text: ''
+            
+            MDTextFieldRound:
+                id: conf_password
+                icon_right: "eye-off"
+                size_hint_x: None
+                password: 'True'
+                width: 200
+                font_size: 14
+                pos_hint: {'center_x': .5}
+                multiline: False
+                text: ''
+            
+            MDTextFieldRound:
+                hint_text:'I am good at'
+                id: good_c1
+                required: True
+                foreground_color: 1, 0, 1, 1
+                size_hint_x: None
+                width: 150
+                font_size: 15
+                pos_hint: {"center_x": 0.5}
+                multiline: False
+            
+            MDTextFieldRound:
+                hint_text:'I am good at'
+                id: good_c2
+                required: True
+                foreground_color: 1, 0, 1, 1
+                size_hint_x: None
+                width: 150
+                font_size: 15
+                pos_hint: {"center_x": 0.5}
+                multiline: False
+            
+            MDTextFieldRound:
+                hint_text:'I am good at'
+                id: good_c3
+                required: True
+                foreground_color: 1, 0, 1, 1
+                size_hint_x: None
+                width: 150
+                font_size: 15
+                pos_hint: {"center_x": 0.5}
+                multiline: False
+            
 
-                MDLabel:
-                    text: "Profile Page"
-                    halign: 'center'
-
+            MDTextFieldRound:
+                hint_text:'I need help with '
+                id: bad_b1
+                required: True
+                foreground_color: 1, 0, 1, 1
+                size_hint_x: None
+                width: 150
+                font_size: 15
+                pos_hint: {"center_x": 0.5}
+                multiline: False
+            
+            MDTextFieldRound:
+                hint_text:'I need help with '
+                id: bad_b2
+                required: True
+                foreground_color: 1, 0, 1, 1
+                size_hint_x: None
+                width: 150
+                font_size: 15
+                pos_hint: {"center_x": 0.5}
+                multiline: False
+            
+            MDFillRoundFlatButton:
+                icon: "account-reactivate"
+                text: 'Update'
+                theme_text_color: "Custom"
+                pos_hint: {'center_x': .5}
+                on_release:
+                    app.update_profile()
