@@ -1,199 +1,320 @@
 import email
+from turtle import title
 from tkinter import Label
 from kivymd.app import MDApp
+from kivy.app import App
+from kivy.uix.label import Label
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.clock import Clock
+from kivy.uix.scrollview import ScrollView
 from kivy.lang import Builder
 import kivy
 from matplotlib.pyplot import text
-#kivy.require('1.0.8')
 from kivymd.uix.list import IconRightWidget, ThreeLineAvatarIconListItem
 import mysql.connector as mysql
-from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivymd.toast import toast
 from  kivymd.uix.floatlayout import MDFloatLayout
 from  kivymd.uix.behaviors import FakeRectangularElevationBehavior
-from kivy.core.text import LabelBase
 from  kivy.uix.screenmanager import NoTransition
-
 import re
+from main_classes import LoginWindow, CreateAccountWindow, ProfileCard, ProfilePage, NavBar, MessageScreen, ChatScreen, ChatListItem, ChatBubble, Message  
+from kivy.core.window import Window
+from kivymd.uix.picker import MDThemePicker
+from demo.demo import profiles
+import socket_client
+import sys
 
-import kivy
+
+
 kivy.require('1.9.0')
 
 from kivy.config import Config
 Config.set('graphics', 'width', '200')
 Config.set('graphics', 'height', '200')
 
-from kivy.core.window import Window
-Window.size = (310, 580)
+Window.size = (320, 600)
+Builder.load_file('kvs/pages/chat_screen.kv')
+Builder.load_file('kvs/widgets/avatar.kv')
+Builder.load_file('kvs/widgets/chat_list_item.kv')
+Builder.load_file('kvs/widgets/text_field.kv')
+Builder.load_file('kvs/widgets/chatbubble.kv')
 
-class LoginWindow(Screen):
-    email = ObjectProperty(None)
-    password = ObjectProperty(None)
+class WindowManager(ScreenManager):
+    '''A window manager to manage switching between sceens.'''
 
-    def validate(self, email, password):
-        mydb = mysql.connect(
-			host = "127.0.0.1", 
-			user = "root",
-			passwd = "Kirgizistan993",
-			database = "dbforusers",
-            )
+"""Chat
+class ConnectPage(GridLayout):
+    # runs on initialization
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-        c = mydb.cursor(dictionary=True) 
-        psw_query = f"select Password from students where email = '{email}'"
-        c.execute(psw_query)
-        psw_records =  c.fetchone() 
-        mydb.commit()
-        if password == psw_records:
-            return True
+        self.cols = 2  # used for our grid
 
+        with open("prev_details.txt","r") as f:
+            d = f.read().split(",")
+            prev_ip = d[0]
+            prev_port = d[1]
+            prev_username = d[2]
+
+        self.add_widget(Label(text='IP:'))  # widget #1, top left
+        self.ip = TextInput(text=prev_ip, multiline=False)  # defining self.ip...
+        self.add_widget(self.ip) # widget #2, top right
+
+        self.add_widget(Label(text='Port:'))
+        self.port = TextInput(text=prev_port, multiline=False)
+        self.add_widget(self.port)
+
+        self.add_widget(Label(text='Username:'))
+        self.username = TextInput(text=prev_username, multiline=False)
+        self.add_widget(self.username)
+
+        # add our button.
+        self.join = Button(text="Join")
+        self.join.bind(on_press=self.join_button)
+        self.add_widget(Label())  # just take up the spot.
+        self.add_widget(self.join)
+
+    def join_button(self, instance):
+        port = self.port.text
+        ip = self.ip.text
+        username = self.username.text
+        with open("prev_details.txt","w") as f:
+            f.write(f"{ip},{port},{username}")
+        #print(f"Joining {ip}:{port} as {username}")
+        # Create info string, update InfoPage with a message and show it
+        info = f"Joining {ip}:{port} as {username}"
+        chat_app.info_page.update_info(info)
+        chat_app.screen_manager.current = 'Info'
+        Clock.schedule_once(self.connect, 1)
+
+    # Connects to the server
+    # (second parameter is the time after which this function had been called,
+    #  we don't care about it, but kivy sends it, so we have to receive it)
+    def connect(self, _):
+
+        # Get information for sockets client
+        port = int(self.port.text)
+        ip = self.ip.text
+        username = self.username.text
+
+        if not socket_client.connect(ip, port, username, show_error):
+            return
+
+        # Create chat page and activate it
+        chat_app.create_chat_page()
+        chat_app.screen_manager.current = 'Chat'
+
+# This class is an improved version of Label
+# Kivy does not provide scrollable label, so we need to create one
+class ScrollableLabel(ScrollView):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # ScrollView does not allow us to add more than one widget, so we need to trick it
+        # by creating a layout and placing two widgets inside it
+        # Layout is going to have one collumn and and size_hint_y set to None,
+        # so height wo't default to any size (we are going to set it on our own)
+        self.layout = GridLayout(cols=1, size_hint_y=None)
+        self.add_widget(self.layout)
+
+        # Now we need two wodgets - Label for chat history and 'artificial' widget below
+        # so we can scroll to it every new message and keep new messages visible
+        # We want to enable markup, so we can set colors for example
+        self.chat_history = Label(size_hint_y=None, markup=True)
+        self.scroll_to_point = Label()
+
+        # We add them to our layout
+        self.layout.add_widget(self.chat_history)
+        self.layout.add_widget(self.scroll_to_point)
+
+    # Methos called externally to add new message to the chat history
+    def update_chat_history(self, message):
+
+        # First add new line and message itself
+        self.chat_history.text += '\n' + message
+
+        # Set layout height to whatever height of chat history text is + 15 pixels
+        # (adds a bit of space at teh bottom)
+        # Set chat history label to whatever height of chat history text is
+        # Set width of chat history text to 98 of the label width (adds small margins)
+        self.layout.height = self.chat_history.texture_size[1] + 15
+        self.chat_history.height = self.chat_history.texture_size[1]
+        self.chat_history.text_size = (self.chat_history.width * 0.98, None)
+
+        # As we are updating above, text height, so also label and layout height are going to be bigger
+        # than the area we have for this widget. ScrollView is going to add a scroll, but won't
+        # scroll to the botton, nor there is a method that can do that.
+        # That's why we want additional, empty wodget below whole text - just to be able to scroll to it,
+        # so scroll to the bottom of the layout
+        self.scroll_to(self.scroll_to_point)
+    
+    def update_chat_history_layout(self, _=None):
+        # Set layout height to whatever height of chat history text is + 15 pixels
+        # (adds a bit of space at the bottom)
+        # Set chat history label to whatever height of chat history text is
+        # Set width of chat history text to 98 of the label width (adds small margins)
+        self.layout.height = self.chat_history.texture_size[1] + 15
+        self.chat_history.height = self.chat_history.texture_size[1]
+        self.chat_history.text_size = (self.chat_history.width * 0.98, None)
+
+
+class ChatPage(GridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # We are going to use 1 column and 2 rows
+        self.cols = 1
+        self.rows = 2
+
+        # First row is going to be occupied by our scrollable label
+        # We want it be take 90% of app height
+        self.history = ScrollableLabel(height=Window.size[1]*0.9, size_hint_y=None)
+        self.add_widget(self.history)
+
+        # In the second row, we want to have input fields and Send button
+        # Input field should take 80% of window width
+        # We also want to bind button click to send_message method
+        self.new_message = TextInput(width=Window.size[0]*0.8, size_hint_x=None, multiline=False)
+        self.send = Button(text="Send")
+        self.send.bind(on_press=self.send_message)
+
+        # To be able to add 2 widgets into a layout with just one collumn, we use additional layout,
+        # add widgets there, then add this layout to main layout as second row
+        bottom_line = GridLayout(cols=2)
+        bottom_line.add_widget(self.new_message)
+        bottom_line.add_widget(self.send)
+        self.add_widget(bottom_line)
+
+
+
+        # To be able to send message on Enter key, we want to listen to keypresses
+        Window.bind(on_key_down=self.on_key_down)
+
+        # We also want to focus on our text input field
+        # Kivy by default takes focus out out of it once we are sending message
+        # The problem here is that 'self.new_message.focus = True' does not work when called directly,
+        # so we have to schedule it to be called in one second
+        # The other problem is that schedule_once() have no ability to pass any parameters, so we have
+        # to create and call a function that takes no parameters
+        Clock.schedule_once(self.focus_text_input, 1)
+
+        # And now, as we have out layout ready and everything set, we can start listening for incimmong messages
+        # Listening method is going to call a callback method to update chat history with new messages,
+        # so we have to start listening for new messages after we create this layout
+        socket_client.start_listening(self.incoming_message, show_error)
+        self.bind(size=self.adjust_fields)
+        # Updates page layout
+    def adjust_fields(self, *_):
+
+        # Chat history height - 90%, but at least 50px for bottom new message/send button part
+        if Window.size[1] * 0.1 < 50:
+            new_height = Window.size[1] - 50
         else:
-            return False 
-    
-class CreateAccountWindow(Screen):
-    username = ObjectProperty(None)
-    email = ObjectProperty(None)
-    password = ObjectProperty(None)
-    confirm_password= ObjectProperty(None)
-    courses_g1 = StringProperty(None)
-    courses_g2 = StringProperty(None)
-    courses_g3 = StringProperty(None)
-    courses_b1 = StringProperty(None)
-    courses_b2 = StringProperty(None)
-    
-    def __init__(self, username, email, password, confirm_password, courses_g1,  courses_g2, courses_g3, courses_b1, courses_b2): 
-        self.username = username
-        self.email = email
-        self.password = password
-        self.confirm_password = confirm_password
-        self.courses_g1 = courses_g1
-        self.courses_g2 = courses_g2
-        self.courses_g3 = courses_g3
-        self.courses_b1 = courses_b1
-        self.courses_b2 = courses_b2
+            new_height = Window.size[1] * 0.9
+        self.history.height = new_height
 
-    
-    def register(self): 
-        
-		# Define DB Stuff
-        mydb = mysql.connect(
-			host = "127.0.0.1", 
-			user = "root",
-			passwd = "Kirgizistan993",
-			database = "dbforusers",
-            )
+        # New message input width - 80%, but at least 160px for send button
+        if Window.size[0] * 0.2 < 160:
+            new_width = Window.size[0] - 160
+        else:
+            new_width = Window.size[0] * 0.8
+        self.new_message.width = new_width
 
-		# Create A Cursor
-        c = mydb.cursor()
-        email_quary = f"select email from students"
-        c.execute(email_quary)
-        email_records =  c.fetchall() 
-        mydb.commit()
-        email_lst = list(email_records)
-        print(email_lst)
-         
-        if self.email not in email_lst:   
-            if self.username != "" and self.email != "" and self.email.count("@") == 1 and self.email.count(".") > 0:
-                if self.password != "" and self.confirm_password != "" and self.password != self.confirm_password and len(self.password) >= 6 and re.search(r"\d", self.password)  and re.search(r"[A-Z]", self.password) and re.search(r"[a-z]", self.password) :
-                    
-                    info_quary = "insert into students (StudentName, Email, Password) values (%s, %s, %s)"
-                    c.execute(info_quary, (self.username, self.email, self.password)) 
-                    course_quary = "insert into courses (Email, CanCourse_1, CanCourse_2, CanCourse_3, NeedCourse_1, NeedCourse_2 ) values (%s, %s, %s, %s, %s, %s)"
-                    c.execute(course_quary, (self.email, self.courses_g1, self.courses_g2, self.courses_g3, self.courses_b1, self.courses_b2)) 
-                    mydb.commit()
-                    mydb.close()
-                else: 
-                    if self.password != self.confirm_password: 
-                        toast("Password doesnt match")
-                    else: 
-                        toast("Please check password")
-        elif self.email in email_lst:
-            toast("Invalid user")
+        # Update chat history layout
+        #self.history.update_chat_history_layout()
+        Clock.schedule_once(self.history.update_chat_history_layout, 0.01)
 
-class ProfileCard(MDFloatLayout, FakeRectangularElevationBehavior): 
-    pass   
-class ProfilePage(): 
-    
-    
-    def get_student_id(self, email):
-        mydb = mysql.connect(
-			host = "127.0.0.1", 
-			user = "root",
-			passwd = "Kirgizistan993",
-			database = "dbforusers",
-            )
+    # Gets called on key press
+    def on_key_down(self, instance, keyboard, keycode, text, modifiers):
 
-		# Create A Cursor
-        c = mydb.cursor()
-        """Hämtar användarens ID från databasen"""
-        studnet_id = f"select StudentId from students where Email = '{email}'"
-        c.execute(studnet_id)
-        result = c.fetchone()
-        mydb.commit()
-        result2 = result[0]
+        # But we want to take an action only when Enter key is being pressed, and send a message
+        if keycode == 40:
+            self.send_message(None)
 
-        return result2
+    # Gets called when either Send button or Enter key is being pressed
+    # (kivy passes button object here as well, but we don;t care about it)
+    def send_message(self, _):
 
-    def update_profile_info(self, id, new_name, passw, conf_passw):
-        
-        mydb = mysql.connect(
-			host = "127.0.0.1", 
-			user = "root",
-			passwd = "Kirgizistan993",
-			database = "dbforusers",
-            )
+        # Get message text and clear message input field
+        message = self.new_message.text
+        self.new_message.text = ''
 
-		# Create A Cursor
-        c = mydb.cursor()
-        if passw != "" and conf_passw != "" and passw == conf_passw and len(passw) >= 6 and re.search(r"\d", passw)  and re.search(r"[A-Z]", passw) and re.search(r"[a-z]", passw) :
+        # If there is any message - add it to chat history and send to the server
+        if message:
+            # Our messages - use red color for the name
+            self.history.update_chat_history(f'[color=dd2020]{chat_app.connect_page.username.text}[/color] > {message}')
+            socket_client.send(message)
 
-            """Uppdaterar användarens profil vid begäran"""
-            c.execute(f"SET SQL_SAFE_UPDATES = 0")
-            update = f"UPDATE  Students SET StudentName = '{new_name}', Password ='{passw}' where StudentID = {id}"
-
-            
-            c.execute(update)
-            mydb.commit()
-            print(id, new_name, passw, conf_passw )
-        else: 
-            toast("Please check the password")
-
-    def update_profile_courses(self, email, good_c1, good_c2, good_c3, bad_c1, bad_c2):
-        mydb = mysql.connect(
-			host = "127.0.0.1", 
-			user = "root",
-			passwd = "Kirgizistan993",
-			database = "dbforusers",
-            )
-
-		# Create A Cursor
-        c = mydb.cursor()
-        """Uppdaterar användarens profil vid begäran"""
-        c.execute(f"SET SQL_SAFE_UPDATES = 0")
-    
-        update_course = f"UPDATE  courses SET CanCourse_1 = '{good_c1}', CanCourse_2 = '{good_c2}', CanCourse_3 = '{good_c3}', NeedCourse_1 = '{bad_c1}', NeedCourse_2 = '{bad_c2}' where Email = '{email}'"
-        c.execute(update_course)
-        mydb.commit()
-        print(good_c1, good_c2, good_c3, bad_c1, bad_c2 )
-
- 
-class NavBar(FakeRectangularElevationBehavior, MDFloatLayout): 
-    pass
+        # As mentioned above, we have to shedule for refocusing to input field
+        Clock.schedule_once(self.focus_text_input, 0.1)
 
 
+    # Sets focus to text input field
+    def focus_text_input(self, _):
+        self.new_message.focus = True
+
+    # Passed to sockets client, get's called on new message
+    def incoming_message(self, username, message):
+        # Update chat history with username and message, green color for username
+        self.history.update_chat_history(f'[color=20dd20]{username}[/color] > {message}')
+
+
+# Simple information/error page
+class InfoPage(GridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # Just one column
+        self.cols = 1
+
+        # And one label with bigger font and centered text
+        self.message = Label(halign="center", valign="middle", font_size=30)
+
+        # By default every widget returns it's side as [100, 100], it gets finally resized,
+        # but we have to listen for size change to get a new one
+        # more: https://github.com/kivy/kivy/issues/1044
+        self.message.bind(width=self.update_text_width)
+
+        # Add text widget to the layout
+        self.add_widget(self.message)
+
+    # Called with a message, to update message text in widget
+    def update_info(self, message):
+        self.message.text = message
+
+    # Called on label width update, so we can set text width properly - to 90% of label width
+    def update_text_width(self, *_):
+        self.message.text_size = (self.message.width * 0.9, None)
+"""
 
 
 class MainApp(MDApp):
+
     def build(self):
-        self.sm = ScreenManager()
+        self.sm = WindowManager(transition=FadeTransition())
         self.sm.add_widget(Builder.load_file('login-page.kv'))
         self.sm.add_widget(Builder.load_file('sign_up2.kv'))
         self.sm.add_widget(Builder.load_file('navbar.kv'))
         #self.sm.add_widget(Builder.load_file('navbar2.kv'))
         self.sm.add_widget(Builder.load_file('profile_page.kv'))
+        self.sm.add_widget(Builder.load_file('matching_page.kv'))
+        self.sm.add_widget(Builder.load_file('main-2.kv'))
+        """
+        self.connect_page = ConnectPage()
+        screen = Screen(name='Connect')
+        screen.add_widget(self.connect_page)
+        self.sm.add_widget(screen)
 
-
-
+        # Info page
+        self.info_page = InfoPage()
+        screen = Screen(name='Info')
+        screen.add_widget(self.info_page)
+        self.sm.add_widget(screen)
+        """
         return self.sm
 
     def created_account(self):
@@ -219,6 +340,7 @@ class MainApp(MDApp):
         else: 
             toast("invalid")
     
+    """Profile page functions"""
 
     def update_profile(self):
         """Funktion som skickar den nya profil informationen till update_profile_info som sedan updaterar databasen"""
@@ -235,19 +357,101 @@ class MainApp(MDApp):
         user_id = ProfilePage().get_student_id(student_email) 
         ProfilePage().update_profile_info(user_id, name, passw, conf_passw)
         ProfilePage().update_profile_courses(student_email, good_course1, good_course2, good_course3, bad_course1, bad_course2)
+    
+    def display_student_name(self): 
+        student_email = self.sm.get_screen('login').ids.user_email.text
+        student_name = ProfilePage().get_student_name(student_email)
+        return student_name
+    
+    def get_can_courses(self): 
+        student_email = self.sm.get_screen('login').ids.user_email.text
+        can_course = ProfilePage().get_list_can_courses(student_email)
+        print(can_course)
+        return can_course
+    
+    def get_my_name(self): 
+        self.root.get_screen("home_page").ids.my_name.text = str(self.display_student_name())
+        course_lst = self.get_can_courses() 
+        self.root.get_screen("home_page").ids.can_c1.text = str(course_lst[0])
+        self.root.get_screen("home_page").ids.can_c2.text = str(course_lst[1])
+        self.root.get_screen("home_page").ids.can_c3.text = str(course_lst[2])
+    
+    """Chat functions"""
 
-    
+    def change_screen(self, screen):
+        '''Change screen using the window manager.'''
+        self.sm.current = screen
 
-    
-    
-    
-   
-        
-    
-        
+    def show_theme_picker(self):
+        '''Display a dialog window to change app's color and theme.'''
+        theme_dialog = MDThemePicker()
+        theme_dialog.open()
+
+    def create_chat(self, profile):
+        '''Get all messages and create a chat screen'''
+        self.chat_screen = ChatScreen()
+        self.msg_builder(profile, self.chat_screen)
+        self.chat_screen.text = profile['name']
+        self.chat_screen.image = profile['image']
+        self.chat_screen.active = profile['active']
+        self.sm.switch_to(self.chat_screen)
 
 
+
+    def chatlist_builder(self):
+        '''Create a Chat List Item for each user and
+        adds it to the Message List'''
+        for messages in profiles:
+            for message in messages['msg']:
+                self.chatitem = ChatListItem()
+                self.chatitem.profile = messages
+                self.chatitem.friend_name = messages['name']
+                self.chatitem.friend_avatar = messages['image']
+
+                lastmessage, time, isRead, sender = message.split(';')
+                self.chatitem.mssg = lastmessage
+                self.chatitem.timestamp = time
+                self.chatitem.isRead = isRead
+                self.chatitem.sender = sender
+            self.sm.get_screen("msg-screen").ids.chatlist.add_widget(self.chatitem)
+
+    def msg_builder(self, profile, screen):
+        '''Create a message bubble for creating chat.'''
+        for prof in profile['msg']:
+            for messages in prof.split("~"):
+                if messages != "":
+                    message, time, isRead, sender = messages.split(";")
+                    self.chatmsg = ChatBubble()
+                    self.chatmsg.msg = message
+                    self.chatmsg.time = time
+                    self.chatmsg.isRead = isRead
+                    self.chatmsg.sender = sender
+                    screen.ids['msglist'].add_widget(self.chatmsg)
+                else:
+                    print("No message")
+
+                print(self.chatmsg.isRead)
+    
+    """Socket chat
+    # We cannot create chat screen with other screens, as it;s init method will start listening
+    # for incoming connections, but at this stage connection is not being made yet, so we
+    # call this method later
+    def create_chat_page(self):
+        self.chat_page = ChatPage()
+        screen = Screen(name='Chat')
+        screen.add_widget(self.chat_page)
+        self.screen_manager.add_widget(screen)
+
+
+    # Error callback function, used by sockets client
+    # Updates info page with an error message, shows message and schedules exit in 10 seconds
+    # time.sleep() won't work here - will block Kivy and page with error message won't show up
+    def show_error(message):
+        chat_app.info_page.update_info(message)
+        chat_app.screen_manager.current = 'Info'
+        Clock.schedule_once(sys.exit, 10)
+    """
+    
 if __name__ == '__main__':
-    #LabelBase.register(name = "MPoppins", fn_regular = "C:\Users\omurb\OneDrive\Dokument\python3\demo-repo\fonts\Poppins\Poppins""-Medium.ttf")
-    #LabelBase.register(name = "BPoppins", fn_regular="C:\Users\omurb\OneDrive\Dokument\python3\demo-repo\fonts\Poppins\Poppins""-Bold.ttf")
-    MainApp().run()
+    chat_app = MainApp()
+    chat_app.run()
