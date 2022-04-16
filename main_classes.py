@@ -23,6 +23,15 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 import re
 kivy.require('1.9.0')
+from  kivy.uix.floatlayout import FloatLayout
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.uix.button import Button
+from kivy.uix.popup import Popup
+from kivy.uix.widget import Widget
+import re
+import random, string
 
 """Database"""
 MYSQL_USER =  'root' #USER-NAME
@@ -33,51 +42,16 @@ mydb = mysql.connect(user=MYSQL_USER,passwd=MYSQL_PASS,database=MYSQL_DATABASE, 
 
 c = mydb.cursor(dictionary=True)
 
+from db_creds import *
+from mail_sender import *
+
+SM = None
 """Main classes"""
-
 class LoginWindow(Screen):
-    """User loggar in genom databasen """
     email = ObjectProperty(None)
     password = ObjectProperty(None)
 
-    def validate(self, email, password):
-        """Validate if password is same as in database"""
-        psw_query = f"select Password from students where email = '{email}'"
-        c.execute(psw_query)
-        psw_records =  c.fetchone() 
-        mydb.commit()
-        if password == psw_records:
-            return True
-
-        else:
-            return False 
-    
-class CreateAccountWindow(Screen):
-    username = ObjectProperty(None)
-    email = ObjectProperty(None)
-    password = ObjectProperty(None)
-    confirm_password= ObjectProperty(None)
-    courses_g1 = StringProperty(None)
-    courses_g2 = StringProperty(None)
-    courses_g3 = StringProperty(None)
-    courses_b1 = StringProperty(None)
-    courses_b2 = StringProperty(None)
-    
-    def __init__(self, username, email, password, confirm_password, courses_g1,  courses_g2, courses_g3, courses_b1, courses_b2): 
-        self.username = username
-        self.email = email
-        self.password = password
-        self.confirm_password = confirm_password
-        self.courses_g1 = courses_g1
-        self.courses_g2 = courses_g2
-        self.courses_g3 = courses_g3
-        self.courses_b1 = courses_b1
-        self.courses_b2 = courses_b2
-
-    
-    def register(self): 
-        
-		# Define DB Stuff
+    def validatee(self, email, password):
         mydb = mysql.connect(
 			host = "127.0.0.1", 
 			user = "root",
@@ -85,32 +59,91 @@ class CreateAccountWindow(Screen):
 			database = "dbforusers",
             )
 
-		# Create A Cursor
-        c = mydb.cursor()
+        c = mydb.cursor(dictionary=True) 
+        psw_query = f"select Password, IsVerified from students where email = '{email}'"
+        c.execute(psw_query)
+        psw_records =  c.fetchone() 
+        print(psw_records)
+        mydb.commit()
+        while password == psw_records['Password']:
+            if psw_records['IsVerified'] == 1:
+                SM.current = "home_page"
+                SM.transition.direction = "up"
+                toast("Login Successful!")
+                
+            else:
+                toast("Please verify your email first!")
+                SM.current = "verification"
+                
+        else:
+            toast("Wrong email or password!")
+            return False 
+    
+
+# class to call the popup function
+class PopupWindow(Widget):
+    def btn(self):
+        popFun()
+  
+# class to build GUI for a popup window
+class P(FloatLayout):
+    pass
+  
+# function that displays the content
+def popFun():
+    show = P()
+    window = Popup(title = "Fel", content = show, width = 2.5, height = 3,
+                   size_hint = (None, None), size = (300, 300))
+    window.open()
+
+class login_page (BoxLayout):
+    access_denied = BooleanProperty(True)
+
+
+class LoginWindow(Screen):
+    email = ObjectProperty(None)
+    password = ObjectProperty(None)
+
+    def validate(self, email, password):
+        mydb = mysql.connect(
+			host = "127.0.0.1", 
+			user = "root",
+			passwd = "Kirgizistan993",
+			database = "dbforusers",
+            )
+
+        c = mydb.cursor() 
+        
         email_quary = f"select email from students"
         c.execute(email_quary)
         email_records =  c.fetchall() 
         mydb.commit()
-        email_lst = list(email_records)
-        print(email_lst)
-         
-        if self.email not in email_lst:   
-            if self.username != "" and self.email != "" and self.email.count("@") == 1 and self.email.count(".") > 0:
-                if self.password != "" and self.confirm_password != "" and self.password != self.confirm_password and len(self.password) >= 6 and re.search(r"\d", self.password)  and re.search(r"[A-Z]", self.password) and re.search(r"[a-z]", self.password) :
-                    
-                    info_quary = "insert into students (StudentName, Email, Password) values (%s, %s, %s)"
-                    c.execute(info_quary, (self.username, self.email, self.password)) 
-                    course_quary = "insert into courses (Email, CanCourse_1, CanCourse_2, CanCourse_3, NeedCourse_1, NeedCourse_2 ) values (%s, %s, %s, %s, %s, %s)"
-                    c.execute(course_quary, (self.email, self.courses_g1, self.courses_g2, self.courses_g3, self.courses_b1, self.courses_b2)) 
-                    mydb.commit()
-                    mydb.close()
-                else: 
-                    if self.password != self.confirm_password: 
-                        toast("Password doesnt match")
-                    else: 
-                        toast("Please check password")
-        elif self.email in email_lst:
-            toast("Invalid user")
+        email_lst = list(x for i in email_records for x in i)
+        
+        
+        psw_query = f"select Password, email from students"
+        c.execute(psw_query)
+        psw_records =  c.fetchall() 
+        mydb.commit()
+       
+        psw_dct = dict((Email, Password) for Password, Email in psw_records)
+        
+        while email in email_lst:
+            try:
+                if psw_dct[email] == password:
+                    return True
+                else:
+                    return False
+            except KeyError:
+                continue
+            break
+
+    
+
+class VerificationPage(Screen):
+    pass
+
+
 
 class ProfileCard(MDFloatLayout, FakeRectangularElevationBehavior): 
     """For the design of the profile page """
