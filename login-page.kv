@@ -57,13 +57,14 @@ MDScreen:
             text: "LOG IN"
             font_size: 15
             pos_hint: {"center_x": 0.5}
+            #disebled: True if root.access_denied else False
             on_press: 
                 app.login_valid()
-                app.root.current = 'home_page'
                 root.manager.transition.direction = "up"
-
-        
-       
-  
-
-  
+        P:
+            
+            Label:
+                text : "Please enter valid information"
+                size_hint : 0.2, 0.1
+                pos_hint : {"x" : 0.3, "top" : 0.8}
+                
