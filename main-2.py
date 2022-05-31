@@ -20,7 +20,7 @@ from  kivymd.uix.floatlayout import MDFloatLayout
 from  kivymd.uix.behaviors import FakeRectangularElevationBehavior
 from  kivy.uix.screenmanager import NoTransition
 import re
-from main_classes import LoginWindow, ProfileCard, ProfilePage, NavBar, MessageScreen, ChatScreen, ChatListItem, ChatBubble, Message, login_page, popFun, P, PopupWindow, VerificationPage  
+from main_classes import LoginWindow, ProfileCard, ProfilePage, NavBar, MessageScreen, ChatScreen, ChatListItem, ChatBubble, Message, login_page, popFun, P, PopupWindow, VerificationPage, SearchPopupMenu  
 from kivy.properties import BooleanProperty, DictProperty, ListProperty, NumericProperty, ObjectProperty, OptionProperty, StringProperty
 from kivy.core.window import Window
 from kivymd.uix.picker import MDThemePicker
@@ -37,6 +37,8 @@ from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 import re
 import random, string
+from kivy.clock import Clock
+
 
 from db_creds import *
 from mail_sender import *
@@ -152,6 +154,8 @@ class MainApp(MDApp):
         self.sm.add_widget(Builder.load_file('profile_page.kv'))
         #self.sm.add_widget(Builder.load_file('matching_page.kv'))
         self.sm.add_widget(Builder.load_file('main-2.kv'))
+        self.sm.add_widget(Builder.load_file('search_profile.kv'))
+
         global SM
         SM = self.sm
 
@@ -168,6 +172,9 @@ class MainApp(MDApp):
         self.sm.add_widget(screen)
         """
         return self.sm
+    
+    # def on_start(self):
+    #     self.search_menu = SearchPopupMenu()
 
     def created_account(self):
         name = self.sm.get_screen("create_an_account").ids.new_user.text
@@ -266,15 +273,43 @@ class MainApp(MDApp):
     def get_can_courses(self): 
         student_email = self.sm.get_screen('login').ids.user_email.text
         can_course = ProfilePage().get_list_can_courses(student_email)
-        print(can_course)
+        #print(can_course)
         return can_course
     
     def get_my_name(self): 
         self.root.get_screen("home_page").ids.my_name.text = str(self.display_student_name())
-        course_lst = self.get_can_courses() 
-        self.root.get_screen("home_page").ids.can_c1.text = str(course_lst[0])
-        self.root.get_screen("home_page").ids.can_c2.text = str(course_lst[1])
-        self.root.get_screen("home_page").ids.can_c3.text = str(course_lst[2])
+        course_lst = self.get_can_courses()
+        #print(course_lst) 
+        self.root.get_screen("home_page").ids.can_c1.text = (course_lst[0])
+        self.root.get_screen("home_page").ids.can_c2.text = (course_lst[1])
+        self.root.get_screen("home_page").ids.can_c3.text = (course_lst[2])
+        self.root.get_screen("home_page").ids.cant_c1.text = (course_lst[3])
+        self.root.get_screen("home_page").ids.cant_c2.text = (course_lst[4])
+    
+    """Search"""
+    def display_search_name(self): 
+        search_student_name = self.sm.get_screen('home_page').ids.search_profile.text
+        #print(search_student_name)
+        display_name = SearchPopupMenu().search_student(search_student_name)
+        return display_name
+    
+    def get_search_courses(self): 
+        search_student_name = self.sm.get_screen('home_page').ids.search_profile.text
+        can_course = SearchPopupMenu().get_search_student_courses(search_student_name)
+        #print(can_course)
+        return can_course
+    
+    def display_search_profile(self): 
+        self.root.get_screen("search_profile").ids.search_name.text = str(self.display_search_name())
+        course_lst = self.get_search_courses()
+        #print(course_lst) 
+        self.root.get_screen("search_profile").ids.search_can_courses_1.text = (course_lst[0])
+        self.root.get_screen("search_profile").ids.search_can_courses_2.text = (course_lst[1])
+        self.root.get_screen("search_profile").ids.search_can_courses_3.text = (course_lst[2])
+        self.root.get_screen("search_profile").ids.search_cant_courses_1.text = (course_lst[3])
+        self.root.get_screen("search_profile").ids.search_cant_courses_2.text = (course_lst[4])
+
+
     
     """Chat functions"""
 
