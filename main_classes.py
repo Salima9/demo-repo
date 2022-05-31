@@ -1,3 +1,4 @@
+from unittest import result
 from kivymd.app import MDApp
 from kivy.lang import Builder
 import kivy
@@ -32,6 +33,15 @@ from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 import re
 import random, string
+from kivymd.uix.dialog import MDDialog
+# from kivy.clock import Clock
+# import certifi
+# from urllib import parse
+from kivy.uix.behaviors.focus import FocusBehavior
+
+
+
+
 
 """Database"""
 MYSQL_USER =  'root' #USER-NAME
@@ -149,8 +159,12 @@ class ProfileCard(MDFloatLayout, FakeRectangularElevationBehavior):
     """For the design of the profile page """
     pass   
 class ProfilePage(): 
+    def __init__(self, **kwargs):
+        super(ProfilePage, self).__init__(**kwargs)
+
     """This class connects with the database and gets student info"""
     def get_student_id(self, email):
+        #måste ha denna
         mydb = mysql.connect(
         host = "127.0.0.1", 
         user = "root",
@@ -166,10 +180,12 @@ class ProfilePage():
         result = c.fetchone()
         mydb.commit()
         result2 = result[0]
+        print(result2)
 
         return result2
     
     def get_student_name(self, email): 
+        #måste ha
         mydb = mysql.connect(
         host = "127.0.0.1", 
         user = "root",
@@ -191,11 +207,11 @@ class ProfilePage():
     def get_list_can_courses(self, email):
         """Gets a list of courses that studnet is good at from the database"""
 
-        courses = f"select CanCourse_1, CanCourse_2, CanCourse_3  from courses where Email = '{email}'"
+        courses = f"select CanCourse_1, CanCourse_2, CanCourse_3, NeedCourse_1, NeedCourse_2 from courses where Email = '{email}'"
         c.execute(courses)
-        result = c.fetchall()
+        result = c.fetchone()
         mydb.commit()
-        can_course_lst = [item for t in result for item in t]
+        can_course_lst = list(result.values())
         print(can_course_lst)
         return can_course_lst
           
@@ -203,15 +219,15 @@ class ProfilePage():
 
 
     def update_profile_info(self, id, new_name, passw, conf_passw):
-        mydb = mysql.connect(
-        host = "127.0.0.1", 
-        user = "root",
-        passwd = "Kirgizistan993",
-        database = "dbforusers",
-        )
+        # mydb = mysql.connect(
+        # host = "127.0.0.1", 
+        # user = "root",
+        # passwd = "Kirgizistan993",
+        # database = "dbforusers",
+        # )
 
-		# Create A Cursor
-        c = mydb.cursor()
+		# # Create A Cursor
+        # c = mydb.cursor()
         """Updates profile info. Checks the password"""
         if passw != "" and conf_passw != "" and passw == conf_passw and len(passw) >= 6 and re.search(r"\d", passw)  and re.search(r"[A-Z]", passw) and re.search(r"[a-z]", passw) :
 
@@ -225,15 +241,15 @@ class ProfilePage():
             toast("Please check the password")
 
     def update_profile_courses(self, email, good_c1, good_c2, good_c3, bad_c1, bad_c2):
-        mydb = mysql.connect(
-        host = "127.0.0.1", 
-        user = "root",
-        passwd = "Kirgizistan993",
-        database = "dbforusers",
-        )
+        # mydb = mysql.connect(
+        # host = "127.0.0.1", 
+        # user = "root",
+        # passwd = "Kirgizistan993",
+        # database = "dbforusers",
+        # )
 
-		# Create A Cursor
-        c = mydb.cursor()
+		# # Create A Cursor
+        # c = mydb.cursor()
 
         """Updates courses"""
         c.execute(f"SET SQL_SAFE_UPDATES = 0")
@@ -286,6 +302,116 @@ class ChatBubble(MDBoxLayout):
 
 class Message(MDLabel):
     '''A adaptive text for the chat bubble.'''
+
+# class Search(): 
+
+#     def check_name(self, search_name):
+#         """Kollar om namnet som söks finns i databasen. Om den finns så returneras namnet"""
+#         student_name = f"select StudentName from students where StudentName = '{search_name}'"
+#         c.execute(student_name)
+#         result = c.fetchone()
+#         print(result)
+#         mydb.commit()
+
+#         student_name_1 = list(result.values())
+#         student_name_2 = student_name_1[0]
+#         print(student_name_1)
+#         if str(search_name.upper()) == str(student_name_2.upper()): 
+            
+#             return student_name_2 
+#         else:
+#             self.check_courses(search_name)
+           
+
+    
+#     def check_courses(self, course_name):
+#         """"Kollar om namnet som söks finns i databasen. Om den finns så returneras lista av kurser"""
+        
+#         search_email = f"select Email from students where CanCourse_1, CanCourse_2 or CanCourse_3   = '{course_name}'"
+#         c.execute(search_email)
+#         search_email_1 = c.fetchone()
+#         #print(result)
+#         mydb.commit()
+#         student_email = list(search_email_1.values())
+#         student_email_1 = student_email[0]
+
+#         courses = f"select CanCourse_1, CanCourse_2, CanCourse_3, NeedCourse_1, NeedCourse_2 from courses where Email = '{student_email_1}'"
+#         c.execute(courses)
+#         result = c.fetchone()
+#         mydb.commit()
+#         can_course_lst = list(result.values())
+#         return can_course_lst  
+
+
+class SearchPopupMenu(): 
+    """Search Box popar ut där man kan skriva in namn på den studenten man söker. Om namnet finns i databasen, en profil sida på den personen visas upp."""
+    def __init__(self, **kwargs):
+        super(SearchPopupMenu, self).__init__(**kwargs)
+
+
+    # title = 'Search by name'
+    # text_button_ok = 'Search'
+    # def __init__(self):
+    #     super().__init__()
+        # self.size_hint = [0.9, 0.3]
+        # self.events_callback = self.callback
+    
+    # def on_touch_down(self, touch):
+    #     super().open()
+    #     self.focus = True
+    #     FocusBehavior.ignored_touch.append(touch)
+
+    # def callback(self, *args):
+    #     search_name = self.text_field.text
+    #     self.search_student(search_name)
+
+
+    
+    def search_student(self, search_name):
+        """Kollar om namnet som söks finns i databasen. Om den finns så returneras namnet"""
+        student_name = f"select StudentName from students where StudentName = '{search_name}'"
+        c.execute(student_name)
+        result = c.fetchone()
+        print(result)
+        mydb.commit()
+
+        student_name_1 = list(result.values())
+        student_name_2 = student_name_1[0]
+        print(student_name_1)
+        if str(search_name.upper()) == str(student_name_2.upper()): 
+            return student_name_2
+        else:
+            print("error")
+            #här kan göra såm som kollar om första bokstaven finns i databasen
+        
+
+        
+
+        
+
+    def get_search_student_courses(self, student_name):
+        """"Kollar om namnet som söks finns i databasen. Om den finns så returneras lista av kurser"""
+        student_name_2 = self.search_student(student_name)
+        #print(search_lst[0])
+        #if str(student_name) == str(search_lst[0]): 
+        if str(student_name_2.upper()) == str(student_name.upper()):
+            search_email = f"select Email from students where StudentName = '{student_name}'"
+            c.execute(search_email)
+            search_email_1 = c.fetchone()
+            #print(result)
+            mydb.commit()
+            student_email = list(search_email_1.values())
+            student_email_1 = student_email[0]
+
+            courses = f"select CanCourse_1, CanCourse_2, CanCourse_3, NeedCourse_1, NeedCourse_2 from courses where Email = '{student_email_1}'"
+            c.execute(courses)
+            result = c.fetchone()
+            mydb.commit()
+            can_course_lst = list(result.values())
+            return can_course_lst
+
+
+
 
 
 
